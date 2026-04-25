@@ -1,0 +1,124 @@
+<div style="height:calc(100vh - 80px);overflow-y:auto;padding:0 4px">
+
+  <!-- Summary cards -->
+  <div style="display:flex;gap:10px;margin:8px 0;flex-wrap:wrap">
+    <div class="m"><label>總信號</label><span>{{ b.total }}</span></div>
+    <div class="m"><label>已追蹤</label><span>{{ b.tracked }}</span></div>
+    <div class="m"><label>止盈命中</label><span class="text-ok">{{ b.tp_hit }}</span></div>
+    <div class="m"><label>止損命中</label><span class="text-danger">{{ b.sl_hit }}</span></div>
+    <div class="m"><label>勝率</label><span class="{{ 'text-ok' if b.win_rate and b.win_rate >= 50 else 'text-danger' }}">{{ '%.1f'|format(b.win_rate) if b.win_rate else '-' }}%</span></div>
+    <div class="m"><label>平均RR</label><span>{{ '%.1f'|format(b.avg_rr) if b.avg_rr else '-' }}:1</span></div>
+    <div class="m"><label>期望值</label><span class="{{ 'text-ok' if b.expectancy and b.expectancy > 0 else 'text-danger' }}">{{ '%+.2f'|format(b.expectancy) if b.expectancy else '-' }}%</span></div>
+  </div>
+
+  <!-- By confidence -->
+  <div class="caption">按信心度分組</div>
+  <table class="data-tbl compact" style="max-width:900px">
+    <tr>
+      <th>信心</th><th>數量</th><th>已追蹤</th>
+      <th>1h均PnL</th><th>4h均PnL</th><th>24h均PnL</th>
+      <th>1h勝率</th><th>4h勝率</th><th>24h勝率</th>
+      <th>止盈</th><th>止損</th><th>勝率</th>
+    </tr>
+    {% for st in b.by_confidence %}
+    <tr>
+      <td><b>{{ st.confidence }}</b></td>
+      <td>{{ st.count }}</td>
+      <td>{{ st.tracked_1h or 0 }}</td>
+      <td class="{{ 'text-ok' if st.avg_1h and st.avg_1h > 0 else 'text-danger' if st.avg_1h else '' }}">
+        {{ '%+.2f%%'|format(st.avg_1h) if st.avg_1h else '-' }}
+      </td>
+      <td class="{{ 'text-ok' if st.avg_4h and st.avg_4h > 0 else 'text-danger' if st.avg_4h else '' }}">
+        {{ '%+.2f%%'|format(st.avg_4h) if st.avg_4h else '-' }}
+      </td>
+      <td class="{{ 'text-ok' if st.avg_24h and st.avg_24h > 0 else 'text-danger' if st.avg_24h else '' }}">
+        {{ '%+.2f%%'|format(st.avg_24h) if st.avg_24h else '-' }}
+      </td>
+      <td>{{ '%.0f%%'|format(st.win_1h) if st.win_1h else '-' }}</td>
+      <td>{{ '%.0f%%'|format(st.win_4h) if st.win_4h else '-' }}</td>
+      <td>{{ '%.0f%%'|format(st.win_24h) if st.win_24h else '-' }}</td>
+      <td class="text-ok">{{ st.tp_hit or 0 }}</td>
+      <td class="text-danger">{{ st.sl_hit or 0 }}</td>
+      <td>{{ '%.0f%%'|format(st.tp_win_rate) if st.tp_win_rate else '-' }}</td>
+    </tr>
+    {% endfor %}
+    {% if not b.by_confidence %}
+    <tr><td colspan="12" class="dim">數據不足</td></tr>
+    {% endif %}
+  </table>
+
+  <!-- By signal type -->
+  <div class="caption" style="margin-top:12px">按類型分組 (機會 vs 別追)</div>
+  <table class="data-tbl compact" style="max-width:700px">
+    <tr><th>類型</th><th>數量</th><th>1h均PnL</th><th>4h均PnL</th><th>24h均PnL</th><th>1h勝率</th></tr>
+    {% for st in b.by_type %}
+    <tr>
+      <td><b>{{ '機會' if st.signal_type == 'opportunity' else '別追' }}</b></td>
+      <td>{{ st.count }}</td>
+      <td class="{{ 'text-ok' if st.avg_1h and st.avg_1h > 0 else 'text-danger' if st.avg_1h else '' }}">
+        {{ '%+.2f%%'|format(st.avg_1h) if st.avg_1h else '-' }}
+      </td>
+      <td class="{{ 'text-ok' if st.avg_4h and st.avg_4h > 0 else 'text-danger' if st.avg_4h else '' }}">
+        {{ '%+.2f%%'|format(st.avg_4h) if st.avg_4h else '-' }}
+      </td>
+      <td class="{{ 'text-ok' if st.avg_24h and st.avg_24h > 0 else 'text-danger' if st.avg_24h else '' }}">
+        {{ '%+.2f%%'|format(st.avg_24h) if st.avg_24h else '-' }}
+      </td>
+      <td>{{ '%.0f%%'|format(st.win_1h) if st.win_1h else '-' }}</td>
+    </tr>
+    {% endfor %}
+    {% if not b.by_type %}
+    <tr><td colspan="6" class="dim">數據不足</td></tr>
+    {% endif %}
+  </table>
+
+  <!-- Individual signal results -->
+  <div class="caption" style="margin-top:12px">個別信號結果 (最近50)</div>
+  <table class="data-tbl compact">
+    <tr>
+      <th>時間</th><th>幣種</th><th>信心</th><th>類型</th>
+      <th>入場</th><th>SL</th><th>TP1</th><th>TP3</th><th>RR</th>
+      <th>結果</th><th>1h PnL</th><th>4h PnL</th><th>24h PnL</th>
+    </tr>
+    {% for s in b.recent %}
+    <tr>
+      <td>{{ s.created_at|tw }}</td>
+      <td><b>{{ s.symbol }}</b></td>
+      <td>{{ s.confidence }} {{s.score}}</td>
+      <td>{{ '別追' if s.signal_type == 'dont_chase' else '機會' }}</td>
+      <td>{{ '%.4g'|format(s.entry_price) if s.entry_price else '-' }}</td>
+      <td class="text-danger">{{ '%.4g'|format(s.sl) if s.sl else '-' }}</td>
+      <td class="text-ok">{{ '%.4g'|format(s.tp1) if s.tp1 else '-' }}</td>
+      <td class="text-ok">{{ '%.4g'|format(s.tp3) if s.tp3 else '-' }}</td>
+      <td>{{ '%.1f'|format(s.rr) if s.rr else '-' }}:1</td>
+      <td>
+        {% if s.result in ('tp1','tp2','tp3') %}
+        <span class="text-ok" style="font-weight:700">{{ s.result|upper }}</span>
+        {% elif s.result == 'sl' %}
+        <span class="text-danger" style="font-weight:700">止損</span>
+        {% elif s.result == 'be' %}
+        <span style="color:#eab308;font-weight:700">保本</span>
+        {% elif s.result == 'open' %}
+        <span style="color:#eab308">觀察中</span>
+        {% elif s.result == 'pending' %}
+        <span class="dim">等待</span>
+        {% else %}
+        <span class="dim">-</span>
+        {% endif %}
+      </td>
+      <td class="{{ 'text-ok' if s.pnl_1h and s.pnl_1h > 0 else 'text-danger' if s.pnl_1h and s.pnl_1h < 0 else '' }}">
+        {{ '%+.1f%%'|format(s.pnl_1h) if s.pnl_1h is not none else '-' }}
+      </td>
+      <td class="{{ 'text-ok' if s.pnl_4h and s.pnl_4h > 0 else 'text-danger' if s.pnl_4h and s.pnl_4h < 0 else '' }}">
+        {{ '%+.1f%%'|format(s.pnl_4h) if s.pnl_4h is not none else '-' }}
+      </td>
+      <td class="{{ 'text-ok' if s.pnl_24h and s.pnl_24h > 0 else 'text-danger' if s.pnl_24h and s.pnl_24h < 0 else '' }}">
+        {{ '%+.1f%%'|format(s.pnl_24h) if s.pnl_24h is not none else '-' }}
+      </td>
+    </tr>
+    {% endfor %}
+    {% if not b.recent %}
+    <tr><td colspan="12" class="dim">尚無追蹤數據</td></tr>
+    {% endif %}
+  </table>
+</div>

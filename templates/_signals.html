@@ -1,0 +1,165 @@
+<div class="split-row" style="height:calc(100vh - 80px)">
+  <div class="col-left">
+    <div class="caption">信號紀錄 ({{ d.total_count }})</div>
+    <div class="tbl-scroll" style="flex:1">
+    <table class="data-tbl compact">
+      <tr>
+        <th>時間</th>
+        <th>幣種</th>
+        <th>強度</th>
+        <th>信心</th>
+        <th>類型</th>
+        <th>入場</th>
+        <th>SL</th>
+        <th>TP1</th>
+        <th>TP2</th>
+        <th>TP3</th>
+        <th>OI Δ%</th>
+        <th>價格 Δ%</th>
+        <th>RSI</th>
+        <th>量比</th>
+        <th>形態</th>
+        <th>上線</th>
+        <th>熱度</th>
+        <th>社交</th>
+        <th>1h</th>
+        <th>4h</th>
+        <th>24h</th>
+      </tr>
+      {% for s in d.signals %}
+      <tr>
+        <td>{{ s.created_at|tw }}</td>
+        <td>
+          <a href="https://www.binance.com/zh-TW/futures/{{ s.pair }}" target="_blank"
+             style="color:#3b82f6;text-decoration:none">
+            <b>{{ s.symbol }}</b>
+          </a>
+        </td>
+        <td>
+          {% if s.level == 'strong' %}
+          <span style="color:#ef4444;font-weight:700">強</span>
+          {% elif s.level == 'medium' %}
+          <span style="color:#eab308;font-weight:700">中</span>
+          {% else %}
+          <span style="color:#22c55e">弱</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if s.confidence == 'high' %}
+          <span style="color:#22c55e;font-weight:700">高 {{s.score}}</span>
+          {% elif s.confidence == 'mid' %}
+          <span style="color:#eab308">中 {{s.score}}</span>
+          {% else %}
+          <span style="color:#6b7280">低 {{s.score}}</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if s.signal_type == 'dont_chase' %}
+          <span style="color:#ef4444;font-weight:700">別追</span>
+          {% elif s.signal_type == 'scanner' %}
+          <span style="color:#3b82f6">掃描</span>
+          {% elif s.signal_type == 'ru7_mm' %}
+          <span style="color:#a855f7">Ru7</span>
+          {% else %}
+          <span style="color:#22c55e">機會</span>
+          {% endif %}
+        </td>
+        <td>{{ '%.4g'|format(s.entry_price) if s.entry_price else '-' }}</td>
+        <td class="text-danger">{{ '%.4g'|format(s.sl) if s.sl else '-' }}</td>
+        <td class="text-ok">{{ '%.4g'|format(s.tp1) if s.tp1 else '-' }}</td>
+        <td class="text-ok">{{ '%.4g'|format(s.tp2) if s.tp2 else '-' }}</td>
+        <td class="text-ok">{{ '%.4g'|format(s.tp3) if s.tp3 else '-' }}</td>
+        <td class="{{ 'text-ok' if s.oi_change_pct and s.oi_change_pct > 0 else '' }}">
+          {{ '%+.1f'|format(s.oi_change_pct) if s.oi_change_pct else '-' }}%
+        </td>
+        <td class="{{ 'text-ok' if s.price_change_pct and s.price_change_pct > 0 else 'text-danger' if s.price_change_pct and s.price_change_pct < 0 else '' }}">
+          {{ '%+.1f'|format(s.price_change_pct) if s.price_change_pct else '-' }}%
+        </td>
+        <td>{{ '%.1f'|format(s.rsi) if s.rsi else '-' }}</td>
+        <td class="{{ 'text-ok' if s.volume_ratio and s.volume_ratio >= 1.5 else '' }}">
+          {{ '%.1f'|format(s.volume_ratio) if s.volume_ratio else '-' }}x
+        </td>
+        <td style="max-width:120px;white-space:normal;font-size:11px">
+          {{ s.patterns_text if s.patterns_text else '-' }}
+        </td>
+        <td>{{ '%d天'|format(s.listing_age) if s.listing_age else '-' }}</td>
+        <td class="{{ 'text-ok' if s.vol_percentile and s.vol_percentile >= 80 else '' }}">
+          {{ 'Top%d%%'|format(100 - s.vol_percentile) if s.vol_percentile else '-' }}
+        </td>
+        <td style="font-size:11px">
+          {% if s.social_tags_text %}{{ s.social_tags_text }}{% else %}-{% endif %}
+          {% if s.trending_rank %}<span class="text-ok"> CG#{{s.trending_rank}}</span>{% endif %}
+        </td>
+        <td class="{{ 'text-ok' if s.pnl_1h and s.pnl_1h > 0 else 'text-danger' if s.pnl_1h and s.pnl_1h < 0 else '' }}">
+          {{ '%+.1f%%'|format(s.pnl_1h) if s.pnl_1h is not none else '-' }}
+        </td>
+        <td class="{{ 'text-ok' if s.pnl_4h and s.pnl_4h > 0 else 'text-danger' if s.pnl_4h and s.pnl_4h < 0 else '' }}">
+          {{ '%+.1f%%'|format(s.pnl_4h) if s.pnl_4h is not none else '-' }}
+        </td>
+        <td class="{{ 'text-ok' if s.pnl_24h and s.pnl_24h > 0 else 'text-danger' if s.pnl_24h and s.pnl_24h < 0 else '' }}">
+          {{ '%+.1f%%'|format(s.pnl_24h) if s.pnl_24h is not none else '-' }}
+        </td>
+      </tr>
+      {% endfor %}
+      {% if not d.signals %}
+      <tr><td colspan="20" class="dim">等待信號中...</td></tr>
+      {% endif %}
+    </table>
+    </div>
+
+    {% if d.total_pages > 1 %}
+    <div style="display:flex;justify-content:center;gap:8px;padding:6px 0">
+      {% for p in range(1, d.total_pages + 1) %}
+      <button class="btn {{ 'btn-ok' if p == d.page else '' }}" style="padding:3px 10px"
+        hx-get="/partial/signals?page={{ p }}" hx-target="#content" hx-swap="innerHTML">{{ p }}</button>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Stats section -->
+    {% if d.stats %}
+    <div class="caption" style="margin-top:6px">信心度驗證</div>
+    <table class="data-tbl compact" style="max-width:600px">
+      <tr><th>信心</th><th>數量</th><th>1h均</th><th>4h均</th><th>24h均</th><th>1h勝率</th><th>4h勝率</th></tr>
+      {% for st in d.stats %}
+      <tr>
+        <td>{{ st.confidence }}</td>
+        <td>{{ st.count }}</td>
+        <td class="{{ 'text-ok' if st.avg_1h and st.avg_1h > 0 else 'text-danger' if st.avg_1h and st.avg_1h < 0 else '' }}">
+          {{ '%+.1f%%'|format(st.avg_1h) if st.avg_1h else '-' }}
+        </td>
+        <td class="{{ 'text-ok' if st.avg_4h and st.avg_4h > 0 else 'text-danger' if st.avg_4h and st.avg_4h < 0 else '' }}">
+          {{ '%+.1f%%'|format(st.avg_4h) if st.avg_4h else '-' }}
+        </td>
+        <td class="{{ 'text-ok' if st.avg_24h and st.avg_24h > 0 else 'text-danger' if st.avg_24h and st.avg_24h < 0 else '' }}">
+          {{ '%+.1f%%'|format(st.avg_24h) if st.avg_24h else '-' }}
+        </td>
+        <td>{{ '%.0f%%'|format(st.win_1h) if st.win_1h else '-' }}</td>
+        <td>{{ '%.0f%%'|format(st.win_4h) if st.win_4h else '-' }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+  </div>
+
+  <div class="col-right">
+    <div class="caption">原始警報 (最近 30)</div>
+    <div class="alert-feed">
+      {% for a in d.recent_alerts %}
+      <div class="af-item {{ 'af-critical' if a.source == 'oi_price' else 'af-warning' }}">
+        <span class="af-time">{{ a.received_at|tw }}</span>
+        <span class="af-badge {{ 'af-b-critical' if a.source == 'oi_price' else 'af-b-warning' }}">
+          {{ 'OI' if a.source == 'oi_price' else '飆' }}
+        </span>
+        <b>{{ a.symbol }}</b>
+        {% if a.oi_change_pct %}OI+{{ '%.0f'|format(a.oi_change_pct) }}%{% endif %}
+        {% if a.price_change_pct %}價+{{ '%.0f'|format(a.price_change_pct) }}%{% endif %}
+        {% if a.market_cap_usd %}${{ '%.0f'|format(a.market_cap_usd / 1000000) }}M{% endif %}
+      </div>
+      {% endfor %}
+      {% if not d.recent_alerts %}
+      <div class="dim">等待警報...</div>
+      {% endif %}
+    </div>
+  </div>
+</div>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MakerRadar — 莊家雷達</title>
+<script src="https://unpkg.com/htmx.org@2.0.4"></script>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <span class="hdr-title">MakerRadar</span>
+    <div class="hdr-metrics">
+      <div class="m">
+        <label>狀態</label>
+        <span style="color:{{ '#22c55e' if d.listener_running else '#ef4444' }}">
+          {{ '● 監聽中' if d.listener_running else '○ 離線' }}
+        </span>
+      </div>
+      <div class="m"><label>今日信號</label><span>{{ d.today_signals }}</span></div>
+      <div class="m"><label>總信號</label><span>{{ d.total_count }}</span></div>
+      <div class="m"><label>強信號</label><span style="color:#ef4444">{{ d.strong_count }}</span></div>
+      <div class="m"><label>總警報</label><span>{{ d.total_alerts }}</span></div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#6b7280">
+    <span>MCap&lt;${{ d.filters.max_mcap // 1000000 }}M</span><span style="color:#374151">|</span>
+    <span>OI≥{{ d.filters.min_oi_change }}%</span><span style="color:#374151">|</span>
+    <span>OI/MC≥{{ d.filters.min_oi_mcap_ratio }}%</span><span style="color:#374151">|</span>
+    <span>飆≥{{ d.filters.min_price_surge }}%</span><span style="color:#374151">|</span>
+    <span>Vol≥{{ d.filters.min_volume_ratio }}x</span>
+  </div>
+</div>
+
+<nav class="tabs">
+  <button class="tab active" onclick="switchTab(this, '/partial/signals')">信號</button>
+  <button class="tab" data-tab="watchlist" onclick="switchTab(this, '/partial/watchlist')">追蹤池</button>
+  <button class="tab" onclick="switchTab(this, '/partial/digest')">日報</button>
+  <button class="tab" onclick="switchTab(this, '/partial/backtest')">回測</button>
+</nav>
+
+<div id="content">
+{% include '_signals.html' %}
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+let currentTab = '/partial/signals';
+let _refreshTimer = null;
+
+function switchTab(el, url) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentTab = url;
+  htmx.ajax('GET', url, {target:'#content', swap:'innerHTML'});
+  if (_refreshTimer) clearInterval(_refreshTimer);
+  _refreshTimer = setInterval(function(){ htmx.ajax('GET', currentTab, {target:'#content', swap:'innerHTML'}); }, 15000);
+}
+_refreshTimer = setInterval(function(){ htmx.ajax('GET', currentTab, {target:'#content', swap:'innerHTML'}); }, 15000);
+
+function showToast(msg, level) {
+  var c = document.getElementById('toast-container');
+  var t = document.createElement('div');
+  t.className = 'toast toast-' + (level || 'info');
+  t.innerHTML = msg + '<span style="float:right;cursor:pointer;opacity:0.5" onclick="this.parentElement.remove()">x</span>';
+  c.prepend(t);
+  setTimeout(function(){ if (t.parentElement) t.remove(); }, 8000);
+  while (c.children.length > 5) c.lastChild.remove();
+}
+</script>
+</body>
+</html>

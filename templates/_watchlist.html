@@ -1,0 +1,138 @@
+<div style="height:calc(100vh - 80px);overflow-y:auto;padding:0 4px">
+
+  <!-- Add coin -->
+  <div style="display:flex;gap:8px;margin:8px 0;align-items:center">
+    <input id="wl-input" type="text" placeholder="輸入幣種 (如 BTC)"
+           style="background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:4px 8px;border-radius:4px;width:140px">
+    <button onclick="addToWatchlist()" style="background:#2563eb;color:#fff;border:none;padding:4px 12px;border-radius:4px;cursor:pointer">加入追蹤</button>
+    <span class="dim" style="margin-left:8px">追蹤中: {{ total }}</span>
+  </div>
+
+  <!-- Entry alerts -->
+  {% if entries %}
+  <div class="caption">入場訊號</div>
+  <table class="data-tbl compact" style="max-width:1100px">
+    <tr>
+      <th>時間</th><th>幣種</th><th>趨勢</th><th>入場價</th><th>訊號</th><th>操作</th>
+    </tr>
+    {% for e in entries %}
+    <tr style="background:#0f2a1f">
+      <td>{{ e.entry_at|tw }}</td>
+      <td><b>{{ e.symbol }}</b></td>
+      <td>{{ e.trend }}</td>
+      <td>{{ '%.6g'|format(e.entry_price) if e.entry_price else '-' }}</td>
+      <td>{{ e.notes }}</td>
+      <td>
+        <a href="https://www.binance.com/zh-TW/futures/{{ e.pair }}" target="_blank" style="color:#60a5fa">開啟</a>
+        <span style="margin:0 4px;color:#475569">|</span>
+        <a href="#" onclick="scanCoin('{{ e.symbol }}')" style="color:#fbbf24">分析</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  <!-- Watchlist -->
+  <div class="caption" style="margin-top:12px">追蹤池</div>
+  <table class="data-tbl compact">
+    <tr>
+      <th>幣種</th><th>來源</th><th>趨勢</th><th>4H前低</th><th>4H前高</th>
+      <th>爆量次數</th><th>入場觸發</th><th>加入時間</th><th>操作</th>
+    </tr>
+    {% for c in coins %}
+    <tr>
+      <td><b>{{ c.symbol }}</b></td>
+      <td class="dim">{{ c.source }}</td>
+      <td>
+        {% if c.trend == 'downtrend' %}
+        <span style="color:#ef4444">下跌</span>
+        {% elif c.trend == 'uptrend' %}
+        <span style="color:#22c55e">上漲</span>
+        {% else %}
+        <span class="dim">{{ c.trend or '待掃描' }}</span>
+        {% endif %}
+      </td>
+      <td>{{ '%.6g'|format(c.swing_low_4h) if c.swing_low_4h else '-' }}</td>
+      <td>{{ '%.6g'|format(c.swing_high_4h) if c.swing_high_4h else '-' }}</td>
+      <td>{{ c.vol_spike_count or 0 }}</td>
+      <td>
+        {% if c.entry_triggered %}
+        <span class="text-ok" style="font-weight:700">YES</span>
+        {% else %}
+        <span class="dim">-</span>
+        {% endif %}
+      </td>
+      <td class="dim">{{ c.added_at|tw }}</td>
+      <td>
+        <a href="https://www.binance.com/zh-TW/futures/{{ c.pair }}" target="_blank" style="color:#60a5fa">圖表</a>
+        <span style="margin:0 4px;color:#475569">|</span>
+        <a href="#" onclick="scanCoin('{{ c.symbol }}')" style="color:#fbbf24">分析</a>
+        <span style="margin:0 4px;color:#475569">|</span>
+        <a href="#" onclick="removeCoin('{{ c.symbol }}')" style="color:#ef4444">移除</a>
+      </td>
+    </tr>
+    {% endfor %}
+    {% if not coins %}
+    <tr><td colspan="9" class="dim">追蹤池為空 — 信號觸發時自動加入，或手動添加</td></tr>
+    {% endif %}
+  </table>
+
+  <!-- Analysis result panel -->
+  <div id="analysis-panel" style="display:none;margin-top:12px;background:#1e293b;border:1px solid #334155;border-radius:6px;padding:12px">
+    <div class="caption">分析結果</div>
+    <pre id="analysis-result" style="color:#e2e8f0;font-size:12px;white-space:pre-wrap"></pre>
+  </div>
+</div>
+
+<script>
+function addToWatchlist() {
+  const input = document.getElementById('wl-input');
+  const symbol = input.value.trim().toUpperCase();
+  if (!symbol) return;
+  fetch('/api/watchlist/add?symbol=' + symbol)
+    .then(r => r.json())
+    .then(d => {
+      input.value = '';
+      document.querySelector('[data-tab="watchlist"]')?.click();
+    });
+}
+
+function removeCoin(symbol) {
+  fetch('/api/watchlist/remove?symbol=' + symbol)
+    .then(() => document.querySelector('[data-tab="watchlist"]')?.click());
+}
+
+function scanCoin(symbol) {
+  const panel = document.getElementById('analysis-panel');
+  const result = document.getElementById('analysis-result');
+  panel.style.display = 'block';
+  result.textContent = 'Loading...';
+  fetch('/api/watchlist/scan?symbol=' + symbol)
+    .then(r => r.json())
+    .then(d => {
+      if (d.error) { result.textContent = d.error; return; }
+      let text = `${symbol} 分析\n`;
+      text += `趨勢: ${d.trend.trend} (強度${d.trend.strength})\n`;
+      text += `現價: ${d.current_price}\n`;
+      text += `RSI: ${d.rsi || '-'}  KDJ: K=${d.kdj?.K || '-'} J=${d.kdj?.J || '-'}\n\n`;
+
+      const rev = d.reversal || {};
+      text += `反轉: ${rev.reversal ? 'YES' : 'NO'} (score ${rev.score})\n`;
+      text += `訊號: ${(rev.signals || []).join(' | ') || '無'}\n\n`;
+
+      if (d.structure_sl) {
+        text += `止損 (4H結構):\n`;
+        text += `  結構位: ${d.structure_sl.structure_level}\n`;
+        text += `  SL: ${d.structure_sl.sl} (-${d.structure_sl.sl_pct}%)\n\n`;
+      }
+
+      if (d.tp_options) {
+        text += `止盈選項:\n`;
+        for (const [k, v] of Object.entries(d.tp_options).sort((a,b) => a[1].pct - b[1].pct)) {
+          if (v.pct > 0) text += `  ${v.label}: ${v.price} (+${v.pct}%)\n`;
+        }
+      }
+      result.textContent = text;
+    });
+}
+</script>

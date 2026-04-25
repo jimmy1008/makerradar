@@ -1,0 +1,76 @@
+/* ── Reset & Base ── */
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100vh;overflow:hidden;background:#0a0e17;color:#d1d5db;font-family:Consolas,'Courier New',monospace;font-size:15px}
+
+/* ── Header ── */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid #1f2937}
+.hdr-left{display:flex;align-items:center;gap:14px}
+.hdr-title{font-size:18px;font-weight:700;color:#fff;letter-spacing:1px}
+.hdr-metrics{display:flex;gap:8px}
+
+/* ── Metrics ── */
+.m{background:#111827;border:1px solid #1f2937;border-radius:6px;padding:6px 14px;text-align:center;min-width:80px}
+.m label{display:block;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
+.m span{font-size:17px;font-weight:700;color:#fff}
+
+/* ── Tabs ── */
+.tabs{display:flex;border-bottom:1px solid #1f2937;padding:0 16px}
+.tab{background:transparent;border:none;color:#6b7280;padding:10px 24px;font-size:15px;cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;transition:all .2s}
+.tab:hover{color:#d1d5db}
+.tab.active{color:#fff;border-bottom-color:#3b82f6}
+
+/* ── Content ── */
+#content{padding:10px 16px;height:calc(100vh - 98px);overflow-y:auto}
+#content::-webkit-scrollbar{width:5px}
+#content::-webkit-scrollbar-thumb{background:#374151;border-radius:2px}
+
+/* ── Layout helpers ── */
+.split-row{display:flex;gap:16px;margin-top:8px;min-height:0;flex:1}
+.col-left{flex:3;min-width:0;display:flex;flex-direction:column}
+.col-right{flex:1.2;min-width:240px;display:flex;flex-direction:column}
+.tbl-scroll{flex:1;overflow-y:auto;min-height:100px}
+.tbl-scroll::-webkit-scrollbar{width:4px}
+.tbl-scroll::-webkit-scrollbar-thumb{background:#374151;border-radius:2px}
+
+/* ── Caption ── */
+.caption{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin:8px 0 4px;padding-left:2px}
+
+/* ── Tables ── */
+.data-tbl{width:100%;border-collapse:collapse}
+.data-tbl th{font-size:13px;color:#6b7280;text-align:left;padding:6px 10px;border-bottom:1px solid #1f2937;position:sticky;top:0;background:#0a0e17;z-index:1}
+.data-tbl td{padding:6px 10px;border-bottom:1px solid rgba(31,41,55,.5);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+.data-tbl.compact td{padding:5px 8px;font-size:13px}
+.data-tbl.compact th{padding:5px 8px;font-size:12px}
+.data-tbl tr:hover{background:rgba(31,41,55,.5)}
+
+/* Status colors */
+.dim{color:#4b5563}
+.text-ok{color:#22c55e}
+.text-warn{color:#eab308}
+.text-danger{color:#ef4444}
+
+/* ── Alert feed ── */
+.alert-feed{display:flex;flex-direction:column;gap:4px;flex:1;overflow-y:auto}
+.af-item{font-size:13px;padding:5px 8px;border-radius:4px;border-left:3px solid transparent}
+.af-info{border-left-color:#22c55e;color:#86efac}
+.af-warning{border-left-color:#eab308;color:#fde68a}
+.af-critical{border-left-color:#ef4444;color:#fca5a5}
+.af-time{color:#6b7280;margin-right:5px;font-size:12px}
+.af-badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:11px;font-weight:700;margin-right:4px}
+.af-b-info{background:rgba(34,197,94,.2);color:#22c55e}
+.af-b-warning{background:rgba(234,179,8,.2);color:#eab308}
+.af-b-critical{background:rgba(239,68,68,.2);color:#ef4444}
+
+/* ── Buttons ── */
+.btn{padding:6px 18px;border-radius:5px;border:1px solid #374151;background:transparent;color:#d1d5db;font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s}
+.btn:hover{border-color:#6b7280}
+.btn-ok{border-color:#22c55e;color:#22c55e}
+.btn-ok:hover{background:rgba(34,197,94,.15)}
+
+/* ── Toast ── */
+#toast-container{position:fixed;top:55px;right:14px;z-index:9999;display:flex;flex-direction:column;gap:5px;max-width:440px}
+.toast{padding:8px 14px;border-radius:6px;font-size:13px;font-family:Consolas,monospace;animation:slideIn .3s ease;border-left:3px solid}
+.toast-critical{background:rgba(239,68,68,.12);border-left-color:#ef4444;color:#fca5a5}
+.toast-warning{background:rgba(234,179,8,.12);border-left-color:#eab308;color:#fde68a}
+.toast-info{background:rgba(34,197,94,.12);border-left-color:#22c55e;color:#86efac}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
